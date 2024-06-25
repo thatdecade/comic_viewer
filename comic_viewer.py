@@ -426,7 +426,7 @@ class ChangeComicDialog:
         if comic:
             self.comic_name_entry.insert(0, comic['name'])
 
-        tk.Label(top, text="GoComic URL: (e.g., babyblues)").pack(pady=5)
+        tk.Label(top, text="Parser URL Snippet: (e.g., babyblues)").pack(pady=5)
         self.comic_url_entry = tk.Entry(top)
         self.comic_url_entry.pack(pady=5)
         if comic:
