@@ -47,7 +47,7 @@ class ChangeComicDialog:
 
     def on_ok(self):
         comic_name = self.comic_name_entry.get().strip()
-        comic_url = self.comic_url_entry.get().strip()
+        comic_url  = self.comic_url_entry.get().strip()
         short_code = self.short_code_entry.get().strip()
 
         if comic_name and comic_url and short_code:
@@ -67,6 +67,18 @@ class ChangeComicDialog:
                 return
 
             self.result = (comic_name, comic_url, short_code, self.header_bg)
+            print(f"User Entered: {self.result}")
             self.top.destroy()
         else:
             messagebox.showerror("Error", "All fields are required.")
+            
+if __name__ == "__main__":
+    print("Debug Mode Testing")
+    root = tk.Tk()
+    root.withdraw()
+
+    comics = [{"name": "Comic Name", "url": "comicsnippet", "short_code": "cn", "header_bg": "blue"}]
+    dialog = ChangeComicDialog(root, comics)
+    
+    root.after(0, lambda: [root.deiconify(), dialog.top.deiconify()])
+    root.mainloop()
