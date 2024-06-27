@@ -11,6 +11,9 @@ class ChangeComicDialog:
         self.comics = comics
         self.comic = comic
 
+        top.bind("<Escape>", self.on_cancel)
+        top.focus_set()
+
         tk.Label(top, text="Comic Name: (e.g., Baby Blues)").pack(pady=5)
         self.comic_name_entry = tk.Entry(top)
         self.comic_name_entry.pack(pady=5)
@@ -83,6 +86,9 @@ class ChangeComicDialog:
         c = list(map(lambda col: col / 12.92 if col <= 0.03928 else pow((col + 0.055) / 1.055, 2.4), uicolors))
         L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2])
         return dark_color if L > 0.179 else light_color
+
+    def on_cancel(self, event=None):
+        self.top.destroy()
             
 if __name__ == "__main__":
     print("Debug Mode Testing")
