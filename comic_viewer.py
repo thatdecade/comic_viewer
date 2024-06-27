@@ -22,7 +22,8 @@ DEFAULT_COMICS = [{
     "name": "Fox Trot",
     "url": "foxtrot",
     "short_code": "ft",
-    "header_bg": "red"
+    "header_bg": "#ff0000",
+    "header_fg": "#ffffff"
 }]
 
 class ComicViewer(tk.Tk):
@@ -43,7 +44,7 @@ class ComicViewer(tk.Tk):
 
     def create_widgets(self):
         # Header
-        self.header = tk.Label(self, text=self.comic_name, bg=self.header_bg, fg="white", font=("Helvetica", 16))
+        self.header = tk.Label(self, text=self.comic_name, bg=self.header_bg, fg=self.header_fg, font=("Helvetica", 16))
         self.header.pack(fill=tk.X)
 
         # Control Frame
@@ -172,12 +173,13 @@ class ComicViewer(tk.Tk):
         self.wait_window(dialog.top)
 
         if dialog.result:
-            comic_name, comic_url, short_code, header_bg = dialog.result
+            comic_name, comic_url, short_code, header_bg, header_fg = dialog.result
             self.comics.append({
                 'name': comic_name,
                 'url': comic_url,
                 'short_code': short_code,
-                'header_bg': header_bg
+                'header_bg': header_bg,
+                'header_fg': header_fg
             })
             self.save_settings()
             self.status_bar.config(text=f"Comic added: {comic_name}")
@@ -196,12 +198,13 @@ class ComicViewer(tk.Tk):
                 self.wait_window(dialog.top)
 
                 if dialog.result:
-                    comic_name, comic_url, short_code, header_bg = dialog.result
+                    comic_name, comic_url, short_code, header_bg, header_fg = dialog.result
                     comic.update({
                         'name': comic_name,
                         'url': comic_url,
                         'short_code': short_code,
-                        'header_bg': header_bg
+                        'header_bg': header_bg,
+                        'header_fg': header_fg
                     })
                     self.save_settings()
                     self.status_bar.config(text=f"Comic edited: {comic_name}")
@@ -229,9 +232,10 @@ class ComicViewer(tk.Tk):
                 self.comic_name = comic['name']
                 self.comic_url = comic['url']
                 self.short_code = comic['short_code']
-                self.header_bg = comic.get('header_bg', 'red')
+                self.header_bg = comic.get('header_bg', '#ff0000')
+                self.header_fg = comic.get('header_fg', '#ffffff')
                 if self.initialized:
-                    self.header.config(text=self.comic_name, bg=self.header_bg)
+                    self.header.config(text=self.comic_name, bg=self.header_bg, fg=self.header_fg)
                     self.status_bar.config(text=f"Comic changed to {self.comic_name}")
                 break
 

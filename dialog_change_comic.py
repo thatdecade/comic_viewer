@@ -32,7 +32,8 @@ class ChangeComicDialog:
         tk.Label(top, text="Header Background Color:").pack(pady=5)
         self.header_bg_button = tk.Button(top, text="Choose Color", command=self.choose_header_bg)
         self.header_bg_button.pack(pady=5)
-        self.header_bg = comic.get('header_bg', 'red') if comic else 'red'
+        self.header_bg = comic.get('header_bg', '#ff0000') if comic else '#ff0000'
+        self.header_fg = comic.get('header_fg', '#ffffff') if comic else '#ffffff'
         self.header_bg_label = tk.Label(top, text=self.header_bg, bg=self.header_bg, width=20)
         self.header_bg_label.pack(pady=5)
 
@@ -42,7 +43,8 @@ class ChangeComicDialog:
         color_code = colorchooser.askcolor(title="Choose Header Background Color")
         if color_code:
             self.header_bg = color_code[1]
-            self.header_bg_label.config(text=self.header_bg, bg=self.header_bg)
+            self.header_fg = self.contrast_color(self.header_bg, '#ffffff', '#000000')
+            self.header_bg_label.config(text=self.header_bg, bg=self.header_bg, fg=self.header_fg)
         self.top.lift()  # Bring the dialog back to focus
 
     def on_ok(self):
@@ -66,18 +68,28 @@ class ChangeComicDialog:
                 messagebox.showerror("Error", "Image short code must be unique.")
                 return
 
-            self.result = (comic_name, comic_url, short_code, self.header_bg)
+            self.result = (comic_name, comic_url, short_code, self.header_bg, self.header_fg)
             print(f"User Entered: {self.result}")
             self.top.destroy()
         else:
             messagebox.showerror("Error", "All fields are required.")
+    
+    def contrast_color(self, bg_color, light_color, dark_color):
+        color = bg_color[1:] if bg_color[0] == '#' else bg_color
+        r = int(color[0:2], 16)  # hexToR
+        g = int(color[2:4], 16)  # hexToG
+        b = int(color[4:6], 16)  # hexToB
+        uicolors = [r / 255, g / 255, b / 255]
+        c = list(map(lambda col: col / 12.92 if col <= 0.03928 else pow((col + 0.055) / 1.055, 2.4), uicolors))
+        L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2])
+        return dark_color if L > 0.179 else light_color
             
 if __name__ == "__main__":
     print("Debug Mode Testing")
     root = tk.Tk()
     root.withdraw()
 
-    comics = [{"name": "Comic Name", "url": "comicsnippet", "short_code": "cn", "header_bg": "blue"}]
+    comics = [{"name": "Comic Name", "url": "comicsnippet", "short_code": "cn", "header_bg": "#0000ff", "header_fg": "#ffffff"}]
     dialog = ChangeComicDialog(root, comics)
     
     root.after(0, lambda: [root.deiconify(), dialog.top.deiconify()])
