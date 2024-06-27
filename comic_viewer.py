@@ -29,8 +29,7 @@ class ComicViewer(tk.Tk):
         self.settings_manager = SettingsManager(SETTINGS_FILE)
         self.settings         = self.settings_manager.settings
         
-        self.comic_manager    = ComicManager(self.settings["comics"])
-        self.selected_comic   = self.comic_manager.selected_comic
+        self.comic_manager    = ComicManager(self.settings["comics"], self.user_changed_comic_list_config)
 
         self.load_settings()
         self.create_widgets()
@@ -44,7 +43,7 @@ class ComicViewer(tk.Tk):
         self.image_handler = ImageHandler(self.image_label, self.status_bar)
 
     def create_header(self):
-        self.header = tk.Label(self, text=self.selected_comic["name"], bg=self.selected_comic["header_bg"], fg=self.selected_comic["header_fg"], font=("Helvetica", 16))
+        self.header = tk.Label(self, text=self.comic_manager.selected_comic["name"], bg=self.comic_manager.selected_comic["header_bg"], fg=self.comic_manager.selected_comic["header_fg"], font=("Helvetica", 16))
         self.header.pack(fill=tk.X)
 
     def create_control_frame(self):
@@ -62,7 +61,7 @@ class ComicViewer(tk.Tk):
             self.comic_selector = ttk.Combobox(self.control_frame, values=[comic['name'] for comic in self.comic_manager.comics])
             self.comic_selector.pack(pady=5)
             self.comic_selector.bind("<<ComboboxSelected>>", self.on_comic_change)
-            self.comic_selector.set(self.selected_comic["name"])
+            self.comic_selector.set(self.comic_manager.selected_comic["name"])
 
     def create_date_selector(self):
         tk.Label(self.control_frame, text="Select Date:").pack(pady=5)
@@ -162,7 +161,7 @@ class ComicViewer(tk.Tk):
 
     def display_latest_image_from_folder(self):
         folder_path = self.get_folder_path()
-        short_code  = self.selected_comic["short_code"]
+        short_code  = self.comic_manager.selected_comic["short_code"]
         latest_file_date = None
         latest_file_name = None
 
@@ -201,10 +200,12 @@ class ComicViewer(tk.Tk):
             'header_fg': header_fg
         }
         self.comic_manager.add_comic(comic_data)
-        self.settings_manager.save_settings(self.settings)
-        self.update_status_bar(f"Comic added: {comic_name}")
+
+    def user_changed_comic_list_config(self):
+        self.create_comic_selector()
+        self.update_status_bar(f"Comic updated: {self.comic_manager.selected_comic['name']}")
         self.update_comic_selector()
-        self.load_comic_details(comic_name)
+        self.load_comic_details(self.comic_manager.selected_comic['name'])
         self.find_comic()
 
     def edit_comic(self):
@@ -240,16 +241,11 @@ class ComicViewer(tk.Tk):
             'header_fg': header_fg
         }
         self.comic_manager.edit_comic(selected_comic, updated_details)
-        self.settings_manager.save_settings(self.settings)
-        self.update_status_bar(f"Comic edited: {comic_name}")
-        self.update_comic_selector()
-        self.load_comic_details(comic_name)
-        self.find_comic()
 
     def update_comic_selector(self):
         if hasattr(self, 'comic_selector'):
             self.comic_selector['values'] = [comic['name'] for comic in self.comic_manager.comics]
-            self.comic_selector.set(self.selected_comic["name"])
+            self.comic_selector.set(self.comic_manager.selected_comic['name'])
 
     def on_comic_change(self, event):
         selected_comic = self.comic_selector.get()
@@ -259,17 +255,17 @@ class ComicViewer(tk.Tk):
     def load_comic_details(self, comic_name):
         comic = self.comic_manager.load_comic_details(comic_name)
         if comic:
-            self.selected_comic = comic
-            self.header.config(text=self.selected_comic["name"], bg=self.selected_comic["header_bg"], fg=self.selected_comic["header_fg"])
-            self.update_status_bar(f"Comic changed to {self.selected_comic['name']}")
+            self.comic_manager.selected_comic = comic
+            self.header.config(text=self.comic_manager.selected_comic["name"], bg=self.comic_manager.selected_comic["header_bg"], fg=self.comic_manager.selected_comic["header_fg"])
+            self.update_status_bar(f"Comic changed to {self.comic_manager.selected_comic['name']}")
 
     def find_comic(self):
         folder_path = self.get_folder_path()
         self.verify_folder_path(folder_path)
 
         date_str = self.date_selector.get_date().strftime("%y%m%d")
-        file_name_jpg = f"{self.selected_comic['short_code']}{date_str}.jpg"
-        file_name_bmp = f"{self.selected_comic['short_code']}{date_str}.bmp"
+        file_name_jpg = f"{self.comic_manager.selected_comic['short_code']}{date_str}.jpg"
+        file_name_bmp = f"{self.comic_manager.selected_comic['short_code']}{date_str}.bmp"
         file_path_jpg = os.path.join(folder_path, file_name_jpg)
         file_path_bmp = os.path.join(folder_path, file_name_bmp)
 
@@ -296,7 +292,7 @@ class ComicViewer(tk.Tk):
     def download_and_save_comic_image(self, date_str, folder_path, file_path_jpg):
         if parser_available:
             self.update_status_bar("Downloading comic image...")
-            comic_name = self.selected_comic["url"]
+            comic_name = self.comic_manager.selected_comic["url"]
             parser = Image_URL_Parser(comic_name)
             image_url = parser.get_comic_image_url(
                 self.date_selector.get_date().year,
@@ -349,7 +345,7 @@ class ComicViewer(tk.Tk):
         self.date = datetime.strptime(self.settings.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
         self.folder_path = self.settings.get("folder_path", default_folder_path)
         self.folder_path_display = self.folder_path if self.folder_path else default_folder_path
-        self.selected_comic = self.comic_manager.load_comic_details(self.settings.get("selected_comic", self.comic_manager.comics[0]['name']))
+        self.comic_manager.selected_comic = self.comic_manager.load_comic_details(self.settings.get("selected_comic", self.comic_manager.comics[0]['name']))
         self.window_size = self.settings.get("window_size", "")
         self.window_position = self.settings.get("window_position", "")
 
@@ -358,7 +354,7 @@ class ComicViewer(tk.Tk):
             "date": self.date_selector.get_date().strftime("%Y-%m-%d"),
             "folder_path": self.folder_path_entry.get() if self.folder_path_entry.get() != os.path.expanduser("~") else "",
             "comics": self.comic_manager.comics,
-            "selected_comic": self.selected_comic["name"],
+            "selected_comic": self.comic_manager.selected_comic["name"],
             "window_size": f"{self.window_width}x{self.window_height}",
             "window_position": f"{self.window_x}+{self.window_y}"
         })
