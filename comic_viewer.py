@@ -1,12 +1,16 @@
 import os
-import json
 from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
-import requests
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from tkcalendar import DateEntry
 from PIL import Image, ImageTk
+import platform
+import requests
+
+from settings_manager import SettingsManager, SETTINGS_FILE
+from comic_manager import ComicManager
+from image_handler import ImageHandler
+from date_navigator import DateNavigator
 from dialog_change_comic import ChangeComicDialog
 
 try:
@@ -14,146 +18,6 @@ try:
     parser_available = True
 except ImportError:
     parser_available = False
-
-import platform
-
-SETTINGS_FILE = "settings.json"
-DEFAULT_COMICS = [{
-    "name": "Fox Trot",
-    "url": "foxtrot",
-    "short_code": "ft",
-    "header_bg": "#ff0000",
-    "header_fg": "#ffffff"
-}]
-
-class SettingsManager:
-    def __init__(self, settings_file):
-        self.settings_file = settings_file
-        self.settings = self.load_settings()
-
-    def load_settings(self):
-        if os.path.exists(self.settings_file):
-            with open(self.settings_file, "r") as f:
-                try:
-                    return json.load(f)
-                except (json.JSONDecodeError, KeyError, TypeError) as e:
-                    print(f"Error loading settings: {e}. Resetting to default settings.")
-                    return self.reset_settings()
-        else:
-            return self.reset_settings()
-
-    def save_settings(self, settings):
-        with open(self.settings_file, "w") as f:
-            json.dump(settings, f)
-
-    def reset_settings(self):
-        return {
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "folder_path": "",
-            "comics": DEFAULT_COMICS,
-            "selected_comic": DEFAULT_COMICS[0]['name'],
-            "window_size": "800x600",
-            "window_position": '100+100'
-        }
-
-class ComicManager:
-    def __init__(self, comics):
-        self.comics = comics
-        self.selected_comic = comics[0]
-
-    def add_comic(self, comic_details):
-        self.comics.append(comic_details)
-        self.selected_comic = comic_details
-
-    def edit_comic(self, selected_comic_name, new_details):
-        for comic in self.comics:
-            if comic['name'] == selected_comic_name:
-                comic.update(new_details)
-                self.selected_comic = comic
-                break
-
-    def load_comic_details(self, comic_name):
-        for comic in self.comics:
-            if comic['name'] == comic_name:
-                self.selected_comic = comic
-                return comic
-        return None
-
-class ImageHandler:
-    def __init__(self, image_label, status_bar):
-        self.image_label = image_label
-        self.status_bar = status_bar
-        self.image = None
-
-    def load_image(self, file_path):
-        try:
-            self.image = Image.open(file_path)
-            self.update_image(self.image_label.winfo_width(), self.image_label.winfo_height(), self.status_bar.winfo_height())
-        except Exception as e:
-            print(f"Error loading image: {e}")
-            self.clear_image()
-
-    def clear_image(self):
-        self.image_label.config(image='')
-        self.image_label.image = None
-
-    def update_image(self, frame_width, frame_height, status_height):
-        if self.image:
-            window_width = frame_width
-            window_height = frame_height - status_height
-
-            if window_width <= 1 or window_height <= 1:
-                return
-
-            image_width, image_height = self.image.size
-
-            aspect_ratio = image_width / image_height
-            new_width = min(window_width, int(window_height * aspect_ratio))
-            new_height = min(window_height, int(window_width / aspect_ratio))
-
-            if new_width <= 0 or new_height <= 0:
-                return
-
-            resized_image = self.image.resize((new_width, new_height), Image.LANCZOS)
-            photo = ImageTk.PhotoImage(resized_image)
-
-            self.image_label.config(image=photo)
-            self.image_label.image = photo
-
-class DateNavigator:
-    def __init__(self, date_selector, comic_viewer):
-        self.date_selector = date_selector
-        self.comic_viewer = comic_viewer
-
-    def next_day(self, event=None):
-        new_date = self.date_selector.get_date() + timedelta(days=1)
-        self.date_selector.set_date(new_date)
-        self.comic_viewer.find_comic()
-
-    def previous_day(self, event=None):
-        new_date = self.date_selector.get_date() - timedelta(days=1)
-        self.date_selector.set_date(new_date)
-        self.comic_viewer.find_comic()
-
-    def next_week(self, event=None):
-        new_date = self.date_selector.get_date() + timedelta(weeks=1)
-        self.date_selector.set_date(new_date)
-        self.comic_viewer.find_comic()
-
-    def previous_week(self, event=None):
-        new_date = self.date_selector.get_date() - timedelta(weeks=1)
-        self.date_selector.set_date(new_date)
-        self.comic_viewer.find_comic()
-
-    def next_month(self):
-        new_date = self.date_selector.get_date() + relativedelta(months=1)
-        self.date_selector.set_date(new_date)
-        self.comic_viewer.find_comic()
-
-    def previous_month(self):
-        new_date = self.date_selector.get_date() - relativedelta(months=1)
-        self.date_selector.set_date(new_date)
-        self.comic_viewer.find_comic()
 
 class ComicViewer(tk.Tk):
     def __init__(self):
@@ -163,13 +27,12 @@ class ComicViewer(tk.Tk):
         self.geometry("800x600")
 
         self.settings_manager = SettingsManager(SETTINGS_FILE)
-        self.settings = self.settings_manager.settings
-
-        self.comic_manager = ComicManager(self.settings["comics"])
-        self.selected_comic = self.comic_manager.selected_comic
+        self.settings         = self.settings_manager.settings
+        
+        self.comic_manager    = ComicManager(self.settings["comics"])
+        self.selected_comic   = self.comic_manager.selected_comic
 
         self.load_settings()
-
         self.create_widgets()
         
         self.bind("<Configure>", self.on_resize)
