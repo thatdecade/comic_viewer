@@ -365,8 +365,10 @@ class ComicViewer(tk.Tk):
         self.load_comic_details("Fox Trot")
         self.window_width = 800
         self.window_height = 600
+        self.window_size = "800x600"
         self.window_x = 100
         self.window_y = 100
+        self.window_position = '100+100'
 
     def get_last_sunday(self, date):
         if date.weekday() == 6:
