@@ -183,15 +183,18 @@ class ComicViewer(tk.Tk):
             })
             self.save_settings()
             self.status_bar.config(text=f"Comic added: {comic_name}")
-            if len(self.comics) > 1 and not hasattr(self, 'comic_selector'):
-                self.create_comic_selector()
+            self.create_comic_selector()
             self.comic_selector['values'] = [comic['name'] for comic in self.comics]
             self.comic_selector.set(comic_name)
             self.load_comic_details(comic_name)
             self.find_comic()
 
     def edit_comic(self):
-        selected_comic = self.comic_selector.get()
+        if hasattr(self, 'comic_selector'):
+            selected_comic = self.comic_selector.get()
+        else:
+            selected_comic = self.comics[0]['name']
+        
         for comic in self.comics:
             if comic['name'] == selected_comic:
                 dialog = ChangeComicDialog(self, self.comics, comic)
@@ -208,19 +211,23 @@ class ComicViewer(tk.Tk):
                     })
                     self.save_settings()
                     self.status_bar.config(text=f"Comic edited: {comic_name}")
-                    self.comic_selector['values'] = [comic['name'] for comic in self.comics]
-                    self.comic_selector.set(comic_name)
+                    
+                    if hasattr(self, 'comic_selector'):
+                        self.comic_selector['values'] = [comic['name'] for comic in self.comics]
+                        self.comic_selector.set(comic_name)
+                    
                     self.load_comic_details(comic_name)
                     self.find_comic()
                 break
 
     def create_comic_selector(self):
-        tk.Label(self.control_frame, text="Select Comic:").pack(pady=5)
-        self.comic_selector = ttk.Combobox(self.control_frame, values=[comic['name'] for comic in self.comics])
-        self.comic_selector.pack(pady=5)
-        self.comic_selector.bind("<<ComboboxSelected>>", self.on_comic_change)
-        self.comic_selector.set(self.comic_name)
-
+        if len(self.comics) > 1 and not hasattr(self, 'comic_selector'):
+            tk.Label(self.control_frame, text="Select Comic:").pack(pady=5)
+            self.comic_selector = ttk.Combobox(self.control_frame, values=[comic['name'] for comic in self.comics])
+            self.comic_selector.pack(pady=5)
+            self.comic_selector.bind("<<ComboboxSelected>>", self.on_comic_change)
+            self.comic_selector.set(self.comic_name)
+        
     def on_comic_change(self, event):
         selected_comic = self.comic_selector.get()
         self.load_comic_details(selected_comic)
