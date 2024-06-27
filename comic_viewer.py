@@ -143,6 +143,16 @@ class ComicViewer(tk.Tk):
             print("Invalid window position format. Using default position.")
             self.center_window()
 
+    def center_window(self):
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+        self.geometry(f"{width}x{height}+{x}+{y}")
+
     def set_folder_path(self):
         folder_path = filedialog.askdirectory()
         if folder_path:
@@ -167,7 +177,7 @@ class ComicViewer(tk.Tk):
         }
         self.comic_manager.add_comic(comic_data)
         self.settings_manager.save_settings(self.settings)
-        self.status_bar.config(text=f"Comic added: {comic_name}")
+        self.update_status_bar(f"Comic added: {comic_name}")
         self.update_comic_selector()
         self.load_comic_details(comic_name)
         self.find_comic()
@@ -206,7 +216,7 @@ class ComicViewer(tk.Tk):
         }
         self.comic_manager.edit_comic(selected_comic, updated_details)
         self.settings_manager.save_settings(self.settings)
-        self.status_bar.config(text=f"Comic edited: {comic_name}")
+        self.update_status_bar(f"Comic edited: {comic_name}")
         self.update_comic_selector()
         self.load_comic_details(comic_name)
         self.find_comic()
@@ -226,7 +236,7 @@ class ComicViewer(tk.Tk):
         if comic:
             self.selected_comic = comic
             self.header.config(text=self.selected_comic["name"], bg=self.selected_comic["header_bg"], fg=self.selected_comic["header_fg"])
-            self.status_bar.config(text=f"Comic changed to {self.selected_comic['name']}")
+            self.update_status_bar(f"Comic changed to {self.selected_comic['name']}")
 
     def find_comic(self):
         folder_path = self.get_folder_path()
@@ -240,10 +250,10 @@ class ComicViewer(tk.Tk):
 
         if os.path.exists(file_path_jpg):
             self.image_handler.load_image(file_path_jpg)
-            self.status_bar.config(text=f"Loaded comic from {file_path_jpg}")
+            self.update_status_bar(f"Loaded comic from {file_path_jpg}")
         elif os.path.exists(file_path_bmp):
             self.image_handler.load_image(file_path_bmp)
-            self.status_bar.config(text=f"Loaded comic from {file_path_bmp}")
+            self.update_status_bar(f"Loaded comic from {file_path_bmp}")
         else:
             self.download_and_save_comic_image(date_str, folder_path, file_path_jpg)
 
@@ -256,13 +266,11 @@ class ComicViewer(tk.Tk):
     def verify_folder_path(self, folder_path):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        self.status_bar.config(text=f"Checking folder path: {folder_path}")
-        self.update_idletasks()
+        self.update_status_bar(f"Checking folder path: {folder_path}")
 
     def download_and_save_comic_image(self, date_str, folder_path, file_path_jpg):
         if parser_available:
-            self.status_bar.config(text="Downloading comic image...")
-            self.update_idletasks()
+            self.update_status_bar("Downloading comic image...")
             comic_name = self.selected_comic["url"]
             parser = Image_URL_Parser(comic_name)
             image_url = parser.get_comic_image_url(
@@ -276,13 +284,11 @@ class ComicViewer(tk.Tk):
             else:
                 self.handle_image_url_failure()
         else:
-            self.status_bar.config(text="Image not found locally.")
+            self.update_status_bar("Image not found locally.")
             self.image_handler.clear_image()
-            self.update_idletasks()
 
     def fetch_and_save_image(self, image_url, file_path_jpg):
-        self.status_bar.config(text="Fetching image from URL...")
-        self.update_idletasks()
+        self.update_status_bar("Fetching image from URL...")
         try:
             response = requests.get(image_url, stream=True)
             response.raise_for_status()
@@ -295,20 +301,25 @@ class ComicViewer(tk.Tk):
             for chunk in response.iter_content(chunk_size=8192):
                 file.write(chunk)
         self.image_handler.load_image(file_path_jpg)
-        self.status_bar.config(text=f"Downloaded and saved comic to {file_path_jpg}")
-        self.update_idletasks()
+        self.update_status_bar(f"Downloaded and saved comic to {file_path_jpg}")
 
     def handle_image_url_failure(self):
         print("Failed to retrieve the comic image URL.")
-        self.status_bar.config(text="Failed to retrieve the comic image URL.")
+        self.update_status_bar("Failed to retrieve the comic image URL.")
         self.image_handler.clear_image()
-        self.update_idletasks()
 
     def handle_image_download_failure(self, error):
         print(f"Error downloading comic image: {error}")
-        self.status_bar.config(text=f"Failed to download the comic image: {error}")
+        self.update_status_bar(f"Failed to download the comic image: {error}")
         self.image_handler.clear_image()
-        self.update_idletasks()
+
+    def load_settings(self):
+        self.date = datetime.strptime(self.settings.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
+        self.folder_path = self.settings.get("folder_path", "")
+        self.folder_path_display = self.folder_path if self.folder_path else os.path.join(os.path.expanduser("~"), "comics")
+        self.selected_comic = self.comic_manager.load_comic_details(self.settings.get("selected_comic", self.comic_manager.comics[0]['name']))
+        self.window_size = self.settings.get("window_size", "")
+        self.window_position = self.settings.get("window_position", "")
 
     def save_settings(self):
         self.settings.update({
@@ -321,24 +332,6 @@ class ComicViewer(tk.Tk):
         })
         self.settings_manager.save_settings(self.settings)
 
-    def load_settings(self):
-        self.date = datetime.strptime(self.settings.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
-        self.folder_path = self.settings.get("folder_path", "")
-        self.folder_path_display = self.folder_path if self.folder_path else os.path.join(os.path.expanduser("~"), "comics")
-        self.selected_comic = self.comic_manager.load_comic_details(self.settings.get("selected_comic", self.comic_manager.comics[0]['name']))
-        self.window_size = self.settings.get("window_size", "")
-        self.window_position = self.settings.get("window_position", "")
-
-    def center_window(self):
-        self.update_idletasks()
-        width = self.winfo_width()
-        height = self.winfo_height()
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x = (screen_width // 2) - (width // 2)
-        y = (screen_height // 2) - (height // 2)
-        self.geometry(f"{width}x{height}+{x}+{y}")
-
     def load_comic_on_startup(self):
         if self.date.strftime("%Y-%m-%d") != datetime.now().strftime("%Y-%m-%d") or self.folder_path != "":
             self.find_comic()
@@ -349,6 +342,10 @@ class ComicViewer(tk.Tk):
     def on_close(self):
         self.save_settings()
         self.destroy()
+
+    def update_status_bar(self, text):
+        self.status_bar.config(text=text)
+        self.update_idletasks()
 
 if __name__ == "__main__":
     app = ComicViewer()
