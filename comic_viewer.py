@@ -158,6 +158,31 @@ class ComicViewer(tk.Tk):
         if folder_path:
             self.folder_path_entry.delete(0, tk.END)
             self.folder_path_entry.insert(0, folder_path)
+            self.display_latest_image_from_folder()
+
+    def display_latest_image_from_folder(self):
+        folder_path = self.get_folder_path()
+        short_code  = self.selected_comic["short_code"]
+        latest_file_date = None
+        latest_file_name = None
+
+        for file in os.listdir(folder_path):
+            if short_code in file:
+                try:
+                    date_str = file.replace(short_code, '').split('.')[0]
+                    file_date = datetime.strptime(date_str, "%y%m%d")
+                    if latest_file_date is None or file_date > latest_file_date:
+                        latest_file_date = file_date
+                        latest_file_name = file
+                except ValueError:
+                    continue
+
+        if latest_file_name:
+            file_path = os.path.join(folder_path, latest_file_name)
+            self.image_handler.load_image(file_path)
+            self.update_status_bar(f"Loaded latest comic: {latest_file_name}")
+            
+            self.date_selector.set_date(latest_file_date)
 
     def add_comic(self):
         dialog = ChangeComicDialog(self, self.comic_manager.comics)
@@ -314,9 +339,16 @@ class ComicViewer(tk.Tk):
         self.image_handler.clear_image()
 
     def load_settings(self):
+        # Determine default folder path based on the operating system
+        if platform.system() == "Windows":
+            default_folder_path = os.path.join(os.path.expanduser("~"), "Pictures", "comics")
+        else:
+            default_folder_path = os.path.join(os.path.expanduser("~"), "comics")
+
+        # Load settings from the settings manager
         self.date = datetime.strptime(self.settings.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d")
-        self.folder_path = self.settings.get("folder_path", "")
-        self.folder_path_display = self.folder_path if self.folder_path else os.path.join(os.path.expanduser("~"), "comics")
+        self.folder_path = self.settings.get("folder_path", default_folder_path)
+        self.folder_path_display = self.folder_path if self.folder_path else default_folder_path
         self.selected_comic = self.comic_manager.load_comic_details(self.settings.get("selected_comic", self.comic_manager.comics[0]['name']))
         self.window_size = self.settings.get("window_size", "")
         self.window_position = self.settings.get("window_position", "")
