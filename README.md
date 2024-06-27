@@ -73,5 +73,3 @@ Store these images in the folder specified in the application settings or the de
 ## Known Issues
 
 - After selecting a day or comic that fails to load, moving the window will cause the previous good comic to be displayed.
-- Editing the settings for the default comic before adding another comic throws an error because the comic select box does not exist.
-- Choosing a light color for the background of the comic title banner can make the white text hard to read. Consider implementing a method to automatically select black or white text based on the background color for better contrast.
