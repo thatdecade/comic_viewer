@@ -7,14 +7,14 @@ from PIL import Image, ImageTk
 import platform
 import requests
 
-from settings_manager import SettingsManager, SETTINGS_FILE
-from comic_manager import ComicManager
-from image_handler import ImageHandler
-from date_navigator import DateNavigator
-from dialog_change_comic import ChangeComicDialog
+from comic_app.settings_manager import SettingsManager, SETTINGS_FILE
+from comic_app.comic_manager import ComicManager
+from comic_app.image_handler import ImageHandler
+from comic_app.date_navigator import DateNavigator
+from comic_app.dialog_change_comic import ChangeComicDialog
 
 try:
-    from image_url_parser import Image_URL_Parser
+    from comic_app.image_url_parser import Image_URL_Parser
     parser_available = True
 except ImportError:
     parser_available = False
