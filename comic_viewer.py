@@ -242,8 +242,8 @@ class ComicViewer(tk.Tk):
                 folder_path = os.path.join(os.path.expanduser("~"), "Pictures", "comics")
             else:
                 folder_path = os.path.join(os.path.expanduser("~"), "comics")
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
         self.status_bar.config(text=f"Checking folder path: {folder_path}")
         self.update_idletasks()
 
