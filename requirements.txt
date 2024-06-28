@@ -8,5 +8,6 @@ python-dateutil==2.9.0.post0
 requests==2.32.3
 six==1.16.0
 soupsieve==2.5
+tk==0.1.0
 tkcalendar==1.6.1
 urllib3==2.2.2

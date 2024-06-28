@@ -41,6 +41,7 @@ class ComicViewer(tk.Tk):
         self.create_image_display()
         self.create_status_bar()
         self.image_handler = ImageHandler(self.image_label, self.status_bar)
+        self.create_context_menu()
 
     def create_header(self):
         self.header = tk.Label(self, text=self.comic_manager.selected_comic["name"], bg=self.comic_manager.selected_comic["header_bg"], fg=self.comic_manager.selected_comic["header_fg"], font=("Helvetica", 16))
@@ -90,12 +91,47 @@ class ComicViewer(tk.Tk):
         self.folder_path_entry.insert(0, self.folder_path_display)
         self.folder_path_entry.pack(pady=5)
         tk.Button(self.control_frame, text="Set Path", command=self.set_folder_path).pack(pady=5)
-
+        
     def create_image_display(self):
         self.image_frame = tk.Frame(self)
         self.image_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
         self.image_label = tk.Label(self.image_frame)
         self.image_label.pack(expand=True, fill=tk.BOTH)
+
+    def create_context_menu(self):
+        self.context_menu = tk.Menu(self, tearoff=0)
+        self.copy_context_menu    = self.context_menu.add_command(label="Copy",       command=self.image_handler.copy_to_clipboard)
+        self.save_as_context_menu = self.context_menu.add_command(label="Save As...", command=self.custom_location_save_as)
+        self.delete_context_menu  = self.context_menu.add_command(label="Delete",     command=self.delete_image)
+
+        self.image_label.bind("<Button-3>", self.show_context_menu)
+
+    def show_context_menu(self, event):
+        self.context_menu.tk_popup(event.x_root, event.y_root)
+
+    def custom_location_save_as(self):
+        if self.image_handler.image:
+            file_path = filedialog.asksaveasfilename(defaultextension=".jpg", filetypes=[("JPEG files", "*.jpg"), ("PNG files", "*.png"), ("All files", "*.*")])
+            if file_path:
+                try:
+                    image = self.image_handler.image
+                    # Convert to RGB if saving as JPEG
+                    if file_path.lower().endswith(".jpg") or file_path.lower().endswith(".jpeg"):
+                        image = image.convert("RGB")
+                    image.save(file_path)
+                    self.update_status_bar(f"Image saved to {file_path}")
+                except Exception as e:
+                    messagebox.showerror("Save Error", f"An error occurred while saving the image: {e}")
+
+    def delete_image(self):
+        result = messagebox.askyesno("Delete Image", "Are you sure you want to delete this image?")
+        if result and self.image_handler.current_file_path:
+            try:
+                os.remove(self.image_handler.current_file_path)
+                self.image_handler.clear_image()
+                self.update_status_bar("Image deleted")
+            except Exception as e:
+                messagebox.showerror("Delete Error", f"An error occurred while deleting the image: {e}")
 
     def create_status_bar(self):
         self.status_bar = tk.Label(self, text="Welcome to Comic Viewer", bd=1, relief=tk.SUNKEN, anchor=tk.W)
@@ -180,7 +216,6 @@ class ComicViewer(tk.Tk):
             file_path = os.path.join(folder_path, latest_file_name)
             self.image_handler.load_image(file_path)
             self.update_status_bar(f"Loaded latest comic: {latest_file_name}")
-            
             self.date_selector.set_date(latest_file_date)
 
     def add_comic(self):
