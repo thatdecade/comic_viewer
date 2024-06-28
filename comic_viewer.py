@@ -12,6 +12,7 @@ from comic_app.comic_manager import ComicManager
 from comic_app.image_handler import ImageHandler
 from comic_app.date_navigator import DateNavigator
 from comic_app.dialog_change_comic import ChangeComicDialog
+from comic_app.dialog_settings import SettingsDialog
 
 try:
     from comic_app.image_url_parser import Image_URL_Parser
@@ -31,9 +32,37 @@ class ComicViewer(tk.Tk):
         
         self.comic_manager    = ComicManager(self.settings["comics"], self.user_changed_comic_list_config)
 
+        self.create_menu()
+        
         self.load_settings()
         self.create_widgets()
         self.bind_events()
+
+    def create_menu(self):
+        menubar = tk.Menu(self)
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="Settings", command=self.open_settings_dialog)
+        file_menu.add_separator()
+        file_menu.add_command(label="Add Comic", command=self.add_comic)
+        file_menu.add_command(label="Edit Comic", command=self.edit_comic)
+        menubar.add_cascade(label="File", menu=file_menu)
+        self.config(menu=menubar)
+
+    def open_settings_dialog(self):
+        settings_dialog = SettingsDialog(self, self.settings, parser_available)
+        self.wait_window(settings_dialog.top)
+        if settings_dialog.result:
+            old_folder_path = self.settings.get("folder_path")
+            self.apply_settings(settings_dialog.result)
+            new_folder_path = self.settings.get("folder_path")
+            if old_folder_path != new_folder_path:
+                self.display_latest_image_from_folder()
+
+    def apply_settings(self, new_settings):
+        self.settings.update(new_settings)
+        self.save_settings()
+        self.load_settings()
+        #self.update_ui_from_settings()
 
     def create_widgets(self):
         self.create_header()
@@ -53,8 +82,6 @@ class ComicViewer(tk.Tk):
         self.create_comic_selector()
         self.create_date_selector()
         self.create_navigation_buttons()
-        self.create_add_edit_buttons()
-        self.create_folder_path_selector()
 
     def create_comic_selector(self):
         if len(self.comic_manager.comics) > 1 and not hasattr(self, 'comic_selector'):
@@ -81,19 +108,8 @@ class ComicViewer(tk.Tk):
         self.create_button("Previous Week", self.date_navigator.previous_week)
         self.create_button("Next Month", self.date_navigator.next_month)
         self.create_button("Previous Month", self.date_navigator.previous_month)
-        ttk.Separator(self.control_frame, orient='horizontal').pack(fill=tk.X, pady=10)
+        #ttk.Separator(self.control_frame, orient='horizontal').pack(fill=tk.X, pady=10)
 
-    def create_add_edit_buttons(self):
-        self.create_button("Add Comic", self.add_comic)
-        self.create_button("Edit Comic", self.edit_comic)
-
-    def create_folder_path_selector(self):
-        tk.Label(self.control_frame, text="Set Folder Path:").pack(pady=5)
-        self.folder_path_entry = tk.Entry(self.control_frame, width=30)
-        self.folder_path_entry.insert(0, self.folder_path_display)
-        self.folder_path_entry.pack(pady=5)
-        tk.Button(self.control_frame, text="Set Path", command=self.set_folder_path).pack(pady=5)
-        
     def create_image_display(self):
         self.image_frame = tk.Frame(self)
         self.image_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
@@ -124,7 +140,7 @@ class ComicViewer(tk.Tk):
                     self.update_status_bar(f"Image saved to {file_path}")
                 except Exception as e:
                     messagebox.showerror("Save Error", f"An error occurred while saving the image: {e}")
-
+
     def delete_image(self):
         result = messagebox.askyesno("Delete Image", "Are you sure you want to delete this image?")
         if result and self.image_handler.current_file_path:
@@ -189,13 +205,6 @@ class ComicViewer(tk.Tk):
         x = (screen_width // 2) - (width // 2)
         y = (screen_height // 2) - (height // 2)
         self.geometry(f"{width}x{height}+{x}+{y}")
-
-    def set_folder_path(self):
-        folder_path = filedialog.askdirectory()
-        if folder_path:
-            self.folder_path_entry.delete(0, tk.END)
-            self.folder_path_entry.insert(0, folder_path)
-            self.display_latest_image_from_folder()
 
     def display_latest_image_from_folder(self):
         folder_path = self.get_folder_path()
@@ -317,7 +326,7 @@ class ComicViewer(tk.Tk):
             self.download_and_save_comic_image(date_str, folder_path, file_path_jpg)
 
     def get_folder_path(self):
-        folder_path = self.folder_path_entry.get()
+        folder_path = self.settings.get("folder_path")
         if not folder_path:
             folder_path = os.path.join(os.path.expanduser("~"), "Pictures", "comics") if platform.system() == "Windows" else os.path.join(os.path.expanduser("~"), "comics")
         return folder_path
@@ -339,18 +348,19 @@ class ComicViewer(tk.Tk):
             )
 
             if image_url:
-                self.fetch_and_save_image(image_url, file_path_jpg)
+                self.fetch_image(image_url, file_path_jpg)
             else:
                 self.handle_image_url_failure()
         else:
             self.update_status_bar("Image not found locally.")
             self.image_handler.clear_image()
 
-    def fetch_and_save_image(self, image_url, file_path_jpg):
+    def fetch_image(self, image_url, file_path_jpg):
         self.update_status_bar("Fetching image from URL...")
         try:
             response = requests.get(image_url, stream=True)
             response.raise_for_status()
+            #if self.settings.get("local_saving", True): #TBD, Option to disable local saving
             self.save_image(response, file_path_jpg)
         except requests.RequestException as e:
             self.handle_image_download_failure(e)
@@ -390,7 +400,7 @@ class ComicViewer(tk.Tk):
     def save_settings(self):
         self.settings.update({
             "date": self.date_selector.get_date().strftime("%Y-%m-%d"),
-            "folder_path": self.folder_path_entry.get() if self.folder_path_entry.get() != os.path.expanduser("~") else "",
+            "folder_path": self.settings.get("folder_path") if self.settings.get("folder_path") != os.path.expanduser("~") else "",
             "comics": self.comic_manager.comics,
             "selected_comic": self.comic_manager.selected_comic["name"],
             "window_size": f"{self.window_width}x{self.window_height}",
