@@ -56,11 +56,13 @@ class ComicViewer(tk.Tk):
         self.create_folder_path_selector()
 
     def create_comic_selector(self):
-        if len(self.comic_manager.comics) > 1:
+        if len(self.comic_manager.comics) > 1 and not hasattr(self, 'comic_selector'):
             tk.Label(self.control_frame, text="Select Comic:").pack(pady=5)
-            self.comic_selector = ttk.Combobox(self.control_frame, values=[comic['name'] for comic in self.comic_manager.comics])
+            self.comic_selector = ttk.Combobox(self.control_frame)
             self.comic_selector.pack(pady=5)
             self.comic_selector.bind("<<ComboboxSelected>>", self.on_comic_change)
+        if hasattr(self, 'comic_selector'):
+            self.comic_selector['values'] = [comic['name'] for comic in self.comic_manager.comics]
             self.comic_selector.set(self.comic_manager.selected_comic["name"])
 
     def create_date_selector(self):
