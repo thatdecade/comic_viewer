@@ -71,28 +71,31 @@
     <div class="container">
         <div class="left-panel">
             <div class="header">
-                <h1>bb</h1>
+                <h1>{{ selected_comic }}</h1>
             </div>
-            <div class="comic-selector">
-                <label for="comic">Select Comic:</label>
-                <select id="comic" name="comic">
-                    <option value="bb">bb</option>
-                    <!-- Add more options here -->
-                </select>
-            </div>
-            <div class="date-selector">
-                <label for="date">Select Date:</label>
-                <input type="date" id="date" name="date" value="2024-06-27">
-            </div>
-            <div class="buttons">
-                <button id="find-refresh">Find/Refresh</button>
-                <button id="prev-day">Previous Day</button>
-                <button id="next-day">Next Day</button>
-                <button id="prev-week">Previous Week</button>
-                <button id="next-week">Next Week</button>
-                <button id="prev-month">Previous Month</button>
-                <button id="next-month">Next Month</button>
-            </div>
+            <form method="post">
+                <div class="comic-selector">
+                    <label for="comic">Select Comic:</label>
+                    <select id="comic" name="comic">
+                        {% for comic in comics %}
+                            <option value="{{ comic['name'] }}" {% if comic['name'] == selected_comic %}selected{% endif %}>{{ comic['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="date-selector">
+                    <label for="date">Select Date:</label>
+                    <input type="date" id="date" name="date" value="{{ selected_date }}">
+                </div>
+                <div class="buttons">
+                    <button type="submit">Find/Refresh</button>
+                    <button type="button" onclick="navigateDate(-1, 'day')">Previous Day</button>
+                    <button type="button" onclick="navigateDate(1, 'day')">Next Day</button>
+                    <button type="button" onclick="navigateDate(-1, 'week')">Previous Week</button>
+                    <button type="button" onclick="navigateDate(1, 'week')">Next Week</button>
+                    <button type="button" onclick="navigateDate(-1, 'month')">Previous Month</button>
+                    <button type="button" onclick="navigateDate(1, 'month')">Next Month</button>
+                </div>
+            </form>
         </div>
         <div class="right-panel">
             <div class="comic">
@@ -103,5 +106,21 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function navigateDate(amount, unit) {
+            const dateInput = document.getElementById('date');
+            let date = new Date(dateInput.value);
+            if (unit === 'day') {
+                date.setDate(date.getDate() + amount);
+            } else if (unit === 'week') {
+                date.setDate(date.getDate() + (amount * 7));
+            } else if (unit === 'month') {
+                date.setMonth(date.getMonth() + amount);
+            }
+            dateInput.value = date.toISOString().split('T')[0];
+            document.forms[0].submit();
+        }
+    </script>
 </body>
 </html>

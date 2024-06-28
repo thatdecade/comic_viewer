@@ -2,6 +2,7 @@ Babel==2.15.0
 beautifulsoup4==4.12.3
 certifi==2024.6.2
 charset-normalizer==3.3.2
+Flask==3.0.3
 idna==3.7
 pillow==10.3.0
 python-dateutil==2.9.0.post0
