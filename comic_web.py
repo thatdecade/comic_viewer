@@ -1,3 +1,4 @@
+#comic_web.py
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 import os
 from datetime import datetime
@@ -113,6 +114,10 @@ def request_image():
     
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
+    
+    # Save the date to settings
+    settings['date'] = selected_date
+    settings_manager.save_settings(settings)
     
     # Start a new thread to load the comic image
     threading.Thread(target=load_comic_image, args=(selected_comic, selected_date, folder_path)).start()
