@@ -67,7 +67,7 @@
         }
     </style>
 </head>
-<body>
+<body onload="requestComicImage()">
     <div class="container">
         <div class="left-panel">
             <div class="header">
@@ -99,10 +99,10 @@
         </div>
         <div class="right-panel">
             <div class="comic">
-                <img src="path/to/comic.jpg" alt="Comic">
+                <img id="comic-image" src="" alt="Comic">
             </div>
-            <div class="footer">
-                Loaded comic from ft240627.jpg
+            <div class="footer" id="status-bar">
+                Loaded comic from C:\Users\dwestaby\Pictures\comics\bb240627.jpg
             </div>
         </div>
     </div>
@@ -119,7 +119,42 @@
                 date.setMonth(date.getMonth() + amount);
             }
             dateInput.value = date.toISOString().split('T')[0];
-            document.forms[0].submit();
+            requestComicImage();
+        }
+
+        function requestComicImage() {
+            const comic = document.getElementById('comic').value;
+            const date = document.getElementById('date').value;
+            
+            fetch('/request_image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ comic: comic, date: date }),
+            })
+            .then(response => {
+                if (response.status === 202) {
+                    checkStatus();
+                }
+            });
+        }
+
+        function checkStatus() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                const statusBar = document.getElementById('status-bar');
+                if (data.status === 'success') {
+                    document.getElementById('comic-image').src = data.file_path;
+                    statusBar.textContent = 'Comic loaded successfully.';
+                } else if (data.status === 'failure') {
+                    statusBar.textContent = 'Failed to load comic.';
+                } else {
+                    statusBar.textContent = data.status;
+                    setTimeout(checkStatus, 500);
+                }
+            });
         }
     </script>
 </body>
