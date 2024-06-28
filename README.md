@@ -72,4 +72,4 @@ Store these images in the folder specified in the application settings or the de
 
 ## Known Issues
 
-- After selecting a day or comic that fails to load, moving the window will cause the previous good comic to be displayed.
+- None

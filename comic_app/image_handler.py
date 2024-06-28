@@ -17,6 +17,7 @@ class ImageHandler:
     def clear_image(self):
         self.image_label.config(image='')
         self.image_label.image = None
+        self.image = None
 
     def update_image(self, frame_width, frame_height, status_height):
         if self.image:
