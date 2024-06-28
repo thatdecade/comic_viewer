@@ -288,6 +288,7 @@ class ComicViewer(tk.Tk):
         selected_comic = self.comic_selector.get()
         self.load_comic_details(selected_comic)
         self.find_comic()
+        self.date_selector.focus_set()
 
     def load_comic_details(self, comic_name):
         comic = self.comic_manager.load_comic_details(comic_name)
