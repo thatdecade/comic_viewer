@@ -23,16 +23,17 @@
             position: relative; /* Position relative for containing the hamburger button */
         }
         .left-panel {
-            width: 300px;
-            border-right: 1px solid #ccc;
+            width: 0;
+            padding: 0;
+            border-right: none;
             height: 100%;
             overflow-y: auto; /* Add scrolling for the left panel if content overflows */
-            transition: width 0.3s; /* Smooth transition for width */
+            transition: width 0.3s, padding 0.3s, border-right 0.3s; /* Smooth transition for width */
         }
-        .left-panel.hidden {
-            width: 0;
-            padding: 0; /* Remove padding when hidden */
-            border-right: none; /* Remove border when hidden */
+        .left-panel.visible {
+            width: 300px;
+            padding: 10px;
+            border-right: 1px solid #ccc;
         }
         .header {
             background-color: #FF0000;
@@ -106,22 +107,22 @@
             color: #888;
         }
         .indicator-bar {
-            height: 1px;
-            background-color: none;
+            height: 20px;
             position: absolute;
             bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
         }
-        .left-indicator {
+        .left-indicator, .right-indicator {
             width: 20%;
-            height: 1px;
+            height: 100%;
             background-color: red;
-            float: left;
-        }
-        .right-indicator {
-            width: 20%;
-            height: 1px;
-            background-color: red;
-            float: right;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -146,12 +147,12 @@
             </div>
             <div class="buttons">
                 <button type="button" onclick="requestComicImage()">Find/Refresh</button>
-                <button type="button" onclick="navigateDate(-1, 'day')">Previous Day</button>
-                <button type="button" onclick="navigateDate(1, 'day')">Next Day</button>
-                <button type="button" onclick="navigateDate(-1, 'week')">Previous Week</button>
-                <button type="button" onclick="navigateDate(1, 'week')">Next Week</button>
-                <button type="button" onclick="navigateDate(-1, 'month')">Previous Month</button>
-                <button type="button" onclick="navigateDate(1, 'month')">Next Month</button>
+                <button type="button" onclick="navigateDate(-1, 'Day')">Previous Day</button>
+                <button type="button" onclick="navigateDate(1, 'Day')">Next Day</button>
+                <button type="button" onclick="navigateDate(-1, 'Week')">Previous Week</button>
+                <button type="button" onclick="navigateDate(1, 'Week')">Next Week</button>
+                <button type="button" onclick="navigateDate(-1, 'Month')">Previous Month</button>
+                <button type="button" onclick="navigateDate(1, 'Month')">Next Month</button>
             </div>
         </div>
         <div class="right-panel" id="right-panel">
@@ -159,11 +160,11 @@
                 <img id="comic-image" src="" alt="Comic" usemap="#comic-map">
                 <map name="comic-map" id="comic-map">
                     <area shape="rect" coords="0,0,0,0" alt="Previous" onclick="navigateUsingLastUnit(-1)">
-                    <area shape="rect" coords="0,0,0,0" alt="Next" onclick="navigateUsingLastUnit(1)">
+                    <area shape="rect" coords="0,0,0,0" alt="Next"     onclick="navigateUsingLastUnit( 1)">
                 </map>
                 <div class="indicator-bar" id="indicator-bar">
-                    <div class="left-indicator"></div>
-                    <div class="right-indicator"></div>
+                    <div class="left-indicator"  id="left-indicator"  onclick="navigateUsingLastUnit(-1)"></div>
+                    <div class="right-indicator" id="right-indicator" onclick="navigateUsingLastUnit( 1)"></div>
                 </div>
             </div>
             <div class="footer" id="status-bar">
@@ -173,7 +174,7 @@
     </div>
 
     <script>
-        let lastUnit = 'day'; // Default unit is 'day'
+        let lastUnit = 'Day';
 
         function saveSettings() {
             const comic = document.getElementById('comic').value;
@@ -187,14 +188,15 @@
         function navigateDate(amount, unit) {
             lastUnit = unit;
             localStorage.setItem('lastUnit', lastUnit);
-            
+            updateIndicatorBarText();
+
             const dateInput = document.getElementById('date');
             let date = new Date(dateInput.value);
-            if (unit === 'day') {
+            if (unit === 'Day') {
                 date.setDate( date.getDate()  + amount);
-            } else if (unit === 'week') {
+            } else if (unit === 'Week') {
                 date.setDate( date.getDate()  + (amount * 7));
-            } else if (unit === 'month') {
+            } else if (unit === 'Month') {
                 date.setMonth(date.getMonth() + amount);
             }
             dateInput.value = date.toISOString().split('T')[0];
@@ -262,6 +264,11 @@
             indicatorBar.style.width = `${width}px`;
         }
 
+        function updateIndicatorBarText() {
+            document.getElementById('left-indicator' ).innerText = `Previous ${lastUnit}`;
+            document.getElementById('right-indicator').innerText = `Next ${lastUnit}`;
+        }
+
         document.addEventListener('keydown', function(event) {
             switch (event.key) {
                 case 'ArrowLeft':
@@ -299,7 +306,8 @@
 
         function toggleMenu() {
             const leftPanel = document.getElementById('left-panel');
-            leftPanel.classList.toggle('hidden');
+            leftPanel.classList.toggle('visible');
+            localStorage.setItem('menuHidden', !leftPanel.classList.contains('visible'));
             setTimeout(resizeComicImage, 300); // Add delay to wait for the animation to complete
         }
 
@@ -307,10 +315,12 @@
             let storedUnit    = localStorage.getItem('lastUnit');
             let selectedComic = localStorage.getItem('selectedComic');
             let selectedDate  = localStorage.getItem('selectedDate');
-	    
+            let menuHidden    = localStorage.getItem('menuHidden') === 'true';
+            
             if (storedUnit) {
                 lastUnit = storedUnit;
             }
+            updateIndicatorBarText();
 
             const comicSelect = document.getElementById('comic');
             if (selectedComic) {
@@ -322,6 +332,11 @@
                 selectedDate = new Date().toISOString().split('T')[0];
             }
             document.getElementById('date').value = selectedDate;
+
+            const leftPanel = document.getElementById('left-panel');
+            if (!menuHidden) {
+                leftPanel.classList.add('visible');
+            }
 
             requestComicImage();
             resizeComicImage();
