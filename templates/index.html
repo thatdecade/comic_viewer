@@ -11,19 +11,25 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden; /* Add overflow hidden to avoid scrollbars */
         }
         .container {
             display: flex;
-            width: 800px;
+            width: 100%;
+            height: 100%; /* Adjust height to 100% */
             border: 1px solid #ccc;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
         }
         .left-panel, .right-panel {
             padding: 20px;
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
         }
         .left-panel {
             width: 300px;
             border-right: 1px solid #ccc;
+            height: 100%;
+            overflow-y: auto; /* Add scrolling for the left panel if content overflows */
         }
         .header {
             background-color: #FF0000;
@@ -57,13 +63,45 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center; /* Center content vertically */
+            height: 100%;
+            overflow: hidden; /* Add overflow hidden to avoid scrollbars */
+        }
+        .comic {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Ensure the image stays within the container */
+            position: relative; /* Position relative for image map */
         }
         .comic img {
             max-width: 100%;
+            max-height: 100%; /* Ensure the image scales within the container */
+            object-fit: contain; /* Ensure the image scales proportionally and is fully visible */
         }
         .footer {
             margin-top: 20px;
             color: #888;
+        }
+        .indicator-bar {
+            height: 1px;
+            background-color: none;
+            position: absolute;
+            bottom: 0;
+        }
+        .left-indicator {
+            width: 20%;
+            height: 1px;
+            background-color: red;
+            float: left;
+        }
+        .right-indicator {
+            width: 20%;
+            height: 1px;
+            background-color: red;
+            float: right;
         }
     </style>
 </head>
@@ -99,7 +137,15 @@
         </div>
         <div class="right-panel">
             <div class="comic">
-                <img id="comic-image" src="" alt="Comic">
+                <img id="comic-image" src="" alt="Comic" usemap="#comic-map">
+                <map name="comic-map" id="comic-map">
+                    <area shape="rect" coords="0,0,0,0" alt="Previous" onclick="navigateDate(-1, 'day')">
+                    <area shape="rect" coords="0,0,0,0" alt="Next" onclick="navigateDate(1, 'day')">
+                </map>
+                <div class="indicator-bar" id="indicator-bar">
+                    <div class="left-indicator"></div>
+                    <div class="right-indicator"></div>
+                </div>
             </div>
             <div class="footer" id="status-bar">
                 Loaded comic from C:\Users\dwestaby\Pictures\comics\bb240627.jpg
@@ -146,7 +192,9 @@
             .then(data => {
                 const statusBar = document.getElementById('status-bar');
                 if (data.status === 'success') {
-                    document.getElementById('comic-image').src = data.file_path;
+                    const comicImage = document.getElementById('comic-image');
+                    comicImage.src = data.file_path;
+                    comicImage.onload = updateImageMap;
                     statusBar.textContent = 'Comic loaded successfully.';
                 } else if (data.status === 'failure') {
                     statusBar.textContent = 'Failed to load comic.';
@@ -156,6 +204,58 @@
                 }
             });
         }
+
+        function updateImageMap() {
+            const img = document.getElementById('comic-image');
+            const map = document.getElementById('comic-map');
+            const indicatorBar = document.getElementById('indicator-bar');
+            const width = img.clientWidth;
+            const height = img.clientHeight;
+
+            const leftArea = map.children[0];
+            const rightArea = map.children[1];
+
+            leftArea.coords = `0,0,${width * 0.2},${height}`;
+            rightArea.coords = `${width * 0.8},0,${width},${height}`;
+
+            // Adjust the indicator bar width to match the image width
+            indicatorBar.style.width = `${width}px`;
+        }
+
+        document.addEventListener('keydown', function(event) {
+            switch (event.key) {
+                case 'ArrowLeft':
+                    navigateDate(-1, 'day');
+                    break;
+                case 'ArrowRight':
+                    navigateDate(1, 'day');
+                    break;
+                case 'ArrowUp':
+                    navigateDate(-1, 'week');
+                    break;
+                case 'ArrowDown':
+                    navigateDate(1, 'week');
+                    break;
+            }
+        });
+
+        function resizeComicImage() {
+            const container = document.querySelector('.container');
+            const rightPanel = document.querySelector('.right-panel');
+            
+            const containerHeight = window.innerHeight;
+            const containerWidth = window.innerWidth;
+            container.style.height = `${containerHeight}px`;
+            container.style.width = `${containerWidth}px`;
+
+            const rightPanelHeight = containerHeight;
+            rightPanel.style.height = `${rightPanelHeight}px`;
+
+            updateImageMap();
+        }
+
+        window.addEventListener('resize', resizeComicImage);
+        window.addEventListener('load', resizeComicImage); // Call resizeComicImage onload
     </script>
 </body>
 </html>
