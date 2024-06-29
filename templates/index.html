@@ -130,31 +130,29 @@
         <button class="hamburger" onclick="toggleMenu()">☰</button>
         <div class="left-panel" id="left-panel">
             <div class="header">
-                <h1>{{ selected_comic }}</h1>
+                <h1 id="header-comic"></h1>
             </div>
-            <form method="post">
-                <div class="comic-selector">
-                    <label for="comic">Select Comic:</label>
-                    <select id="comic" name="comic">
-                        {% for comic in comics %}
-                            <option value="{{ comic['name'] }}" {% if comic['name'] == selected_comic %}selected{% endif %}>{{ comic['name'] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="date-selector">
-                    <label for="date">Select Date:</label>
-                    <input type="date" id="date" name="date" value="{{ selected_date }}">
-                </div>
-                <div class="buttons">
-                    <button type="submit">Find/Refresh</button>
-                    <button type="button" onclick="navigateDate(-1, 'day')">Previous Day</button>
-                    <button type="button" onclick="navigateDate(1, 'day')">Next Day</button>
-                    <button type="button" onclick="navigateDate(-1, 'week')">Previous Week</button>
-                    <button type="button" onclick="navigateDate(1, 'week')">Next Week</button>
-                    <button type="button" onclick="navigateDate(-1, 'month')">Previous Month</button>
-                    <button type="button" onclick="navigateDate(1, 'month')">Next Month</button>
-                </div>
-            </form>
+            <div class="comic-selector">
+                <label for="comic">Select Comic:</label>
+                <select id="comic" name="comic" onchange="requestComicImage()">
+                    {% for comic in comics %}
+                        <option value="{{ comic['name'] }}">{{ comic['name'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="date-selector">
+                <label for="date">Select Date:</label>
+                <input type="date" id="date" name="date" onchange="requestComicImage()">
+            </div>
+            <div class="buttons">
+                <button type="button" onclick="requestComicImage()">Find/Refresh</button>
+                <button type="button" onclick="navigateDate(-1, 'day')">Previous Day</button>
+                <button type="button" onclick="navigateDate(1, 'day')">Next Day</button>
+                <button type="button" onclick="navigateDate(-1, 'week')">Previous Week</button>
+                <button type="button" onclick="navigateDate(1, 'week')">Next Week</button>
+                <button type="button" onclick="navigateDate(-1, 'month')">Previous Month</button>
+                <button type="button" onclick="navigateDate(1, 'month')">Next Month</button>
+            </div>
         </div>
         <div class="right-panel" id="right-panel">
             <div class="comic" id="comic">
@@ -177,15 +175,25 @@
     <script>
         let lastUnit = 'day'; // Default unit is 'day'
 
+        function saveSettings() {
+            const comic = document.getElementById('comic').value;
+            localStorage.setItem('selectedComic', comic);
+            document.getElementById('header-comic').innerText = comic;
+
+            const date = document.getElementById('date').value;
+            localStorage.setItem('selectedDate', date);
+        }
+
         function navigateDate(amount, unit) {
-            lastUnit = unit; // Store the last unit used
-            localStorage.setItem('lastUnit', lastUnit); // Save to local storage
+            lastUnit = unit;
+            localStorage.setItem('lastUnit', lastUnit);
+            
             const dateInput = document.getElementById('date');
             let date = new Date(dateInput.value);
             if (unit === 'day') {
-                date.setDate(date.getDate() + amount);
+                date.setDate( date.getDate()  + amount);
             } else if (unit === 'week') {
-                date.setDate(date.getDate() + (amount * 7));
+                date.setDate( date.getDate()  + (amount * 7));
             } else if (unit === 'month') {
                 date.setMonth(date.getMonth() + amount);
             }
@@ -199,7 +207,7 @@
 
         function requestComicImage() {
             const comic = document.getElementById('comic').value;
-            const date = document.getElementById('date').value;
+            const date  = document.getElementById('date').value;
             
             fetch('/request_image', {
                 method: 'POST',
@@ -223,7 +231,10 @@
                 if (data.status === 'success') {
                     const comicImage = document.getElementById('comic-image');
                     comicImage.src = data.file_path;
-                    comicImage.onload = updateImageMap;
+                    comicImage.onload = () => {
+                        updateImageMap();
+                        saveSettings();
+                    };
                     statusBar.textContent = 'Comic loaded successfully.';
                 } else if (data.status === 'failure') {
                     statusBar.textContent = 'Failed to load comic.';
@@ -235,16 +246,16 @@
         }
 
         function updateImageMap() {
-            const img = document.getElementById('comic-image');
-            const map = document.getElementById('comic-map');
+            const img          = document.getElementById('comic-image');
+            const map          = document.getElementById('comic-map');
             const indicatorBar = document.getElementById('indicator-bar');
-            const width = img.clientWidth;
+            const width  = img.clientWidth;
             const height = img.clientHeight;
 
-            const leftArea = map.children[0];
+            const leftArea  = map.children[0];
             const rightArea = map.children[1];
 
-            leftArea.coords = `0,0,${width * 0.2},${height}`;
+            leftArea.coords  = `0,0,${width * 0.2},${height}`;
             rightArea.coords = `${width * 0.8},0,${width},${height}`;
 
             // Adjust the indicator bar width to match the image width
@@ -269,16 +280,16 @@
         });
 
         function resizeComicImage() {
-            const container = document.querySelector('.container');
+            const container  = document.querySelector('.container');
             const rightPanel = document.querySelector('.right-panel');
-            const comic = document.getElementById('comic');
+            const comic      = document.getElementById('comic');
             
             const containerHeight = window.innerHeight;
-            const containerWidth = window.innerWidth;
+            const containerWidth  = window.innerWidth;
             container.style.height = `${containerHeight}px`;
-            container.style.width = `${containerWidth}px`;
+            container.style.width  = `${containerWidth}px`;
 
-            const rightPanelHeight = containerHeight;
+            const rightPanelHeight  = containerHeight;
             rightPanel.style.height = `${rightPanelHeight}px`;
 
             comic.style.width = `${rightPanel.clientWidth}px`;
@@ -289,15 +300,29 @@
         function toggleMenu() {
             const leftPanel = document.getElementById('left-panel');
             leftPanel.classList.toggle('hidden');
-            setTimeout(resizeComicImage, 300); // Add delay to wait for the transition to complete
+            setTimeout(resizeComicImage, 300); // Add delay to wait for the animation to complete
         }
 
         function initPage() {
-            // Retrieve lastUnit from local storage
-            const storedUnit = localStorage.getItem('lastUnit');
+            let storedUnit    = localStorage.getItem('lastUnit');
+            let selectedComic = localStorage.getItem('selectedComic');
+            let selectedDate  = localStorage.getItem('selectedDate');
+	    
             if (storedUnit) {
                 lastUnit = storedUnit;
             }
+
+            const comicSelect = document.getElementById('comic');
+            if (selectedComic) {
+                comicSelect.value = selectedComic;
+            }
+            document.getElementById('header-comic').innerText = comicSelect.value;
+            
+            if (!selectedDate) {
+                selectedDate = new Date().toISOString().split('T')[0];
+            }
+            document.getElementById('date').value = selectedDate;
+
             requestComicImage();
             resizeComicImage();
         }

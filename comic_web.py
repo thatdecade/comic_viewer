@@ -39,12 +39,8 @@ def download_and_save_comic_image(date_str, folder_path, file_path_jpg):
         if image_url:
             print("Parse success, fetch image to save.")
             fetch_image(image_url, file_path_jpg)
-        else:
-            print("Parse failed.")
-            image_status["status"] = "Failed to find comic"
-    else:
-        print("No local file, no parser installed.")
-        image_status["status"] = "Image not found locally."
+            return
+    image_status["status"] = "failure"
 
 def fetch_image(image_url, file_path_jpg):
     global image_status
@@ -53,7 +49,7 @@ def fetch_image(image_url, file_path_jpg):
         response.raise_for_status()
         save_image(response, file_path_jpg)
     except requests.RequestException as e:
-        image_status["status"] = "Failed to find comic"
+        image_status["status"] = "failure"
 
 def save_image(response, file_path_jpg):
     global image_status
@@ -87,21 +83,10 @@ def load_comic_image(selected_comic, selected_date, folder_path):
 @app.route('/', methods=['GET', 'POST'])
 def comic_viewer():
     if request.method == 'POST':
-        selected_comic = request.form.get('comic')
-        selected_date = request.form.get('date')
-        # Update settings with the selected comic and date
-        settings['selected_comic'] = selected_comic
-        settings['date'] = selected_date
         settings_manager.save_settings(settings)
         return redirect(url_for('comic_viewer'))
 
-    selected_comic = settings.get('selected_comic', comic_manager.comics[0]['name'])
-    selected_date = settings.get('date', datetime.now().strftime("%Y-%m-%d"))
-
-    return render_template('index.html', 
-                           comics=comic_manager.comics, 
-                           selected_comic=selected_comic, 
-                           selected_date=selected_date)
+    return render_template('index.html', comics=comic_manager.comics)
 
 @app.route('/request_image', methods=['POST'])
 def request_image():
@@ -114,10 +99,6 @@ def request_image():
     
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-    
-    # Save the date to settings
-    settings['date'] = selected_date
-    settings_manager.save_settings(settings)
     
     # Start a new thread to load the comic image
     threading.Thread(target=load_comic_image, args=(selected_comic, selected_date, folder_path)).start()
