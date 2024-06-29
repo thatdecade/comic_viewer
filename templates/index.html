@@ -20,16 +20,19 @@
             border: 1px solid #ccc;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             box-sizing: border-box; /* Include padding and border in element's total width and height */
-        }
-        .left-panel, .right-panel {
-            padding: 20px;
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
+            position: relative; /* Position relative for containing the hamburger button */
         }
         .left-panel {
             width: 300px;
             border-right: 1px solid #ccc;
             height: 100%;
             overflow-y: auto; /* Add scrolling for the left panel if content overflows */
+            transition: width 0.3s; /* Smooth transition for width */
+        }
+        .left-panel.hidden {
+            width: 0;
+            padding: 0; /* Remove padding when hidden */
+            border-right: none; /* Remove border when hidden */
         }
         .header {
             background-color: #FF0000;
@@ -37,6 +40,23 @@
             padding: 10px;
             margin-bottom: 20px;
             text-align: center;
+        }
+        .hamburger {
+            display: block;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: #FF0000;
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 1000; /* Ensure it stays on top */
+            font-size: 24px;
+            line-height: 30px;
+            text-align: center;
+            border-radius: 5px;
         }
         .comic-selector, .date-selector, .buttons {
             margin-bottom: 10px;
@@ -105,9 +125,10 @@
         }
     </style>
 </head>
-<body onload="requestComicImage()">
+<body onload="initPage()">
     <div class="container">
-        <div class="left-panel">
+        <button class="hamburger" onclick="toggleMenu()">☰</button>
+        <div class="left-panel" id="left-panel">
             <div class="header">
                 <h1>{{ selected_comic }}</h1>
             </div>
@@ -135,12 +156,12 @@
                 </div>
             </form>
         </div>
-        <div class="right-panel">
-            <div class="comic">
+        <div class="right-panel" id="right-panel">
+            <div class="comic" id="comic">
                 <img id="comic-image" src="" alt="Comic" usemap="#comic-map">
                 <map name="comic-map" id="comic-map">
-                    <area shape="rect" coords="0,0,0,0" alt="Previous" onclick="navigateDate(-1, 'day')">
-                    <area shape="rect" coords="0,0,0,0" alt="Next" onclick="navigateDate(1, 'day')">
+                    <area shape="rect" coords="0,0,0,0" alt="Previous" onclick="navigateUsingLastUnit(-1)">
+                    <area shape="rect" coords="0,0,0,0" alt="Next" onclick="navigateUsingLastUnit(1)">
                 </map>
                 <div class="indicator-bar" id="indicator-bar">
                     <div class="left-indicator"></div>
@@ -154,7 +175,11 @@
     </div>
 
     <script>
+        let lastUnit = 'day'; // Default unit is 'day'
+
         function navigateDate(amount, unit) {
+            lastUnit = unit; // Store the last unit used
+            localStorage.setItem('lastUnit', lastUnit); // Save to local storage
             const dateInput = document.getElementById('date');
             let date = new Date(dateInput.value);
             if (unit === 'day') {
@@ -166,6 +191,10 @@
             }
             dateInput.value = date.toISOString().split('T')[0];
             requestComicImage();
+        }
+
+        function navigateUsingLastUnit(amount) {
+            navigateDate(amount, lastUnit); // Use the last unit for navigation
         }
 
         function requestComicImage() {
@@ -242,6 +271,7 @@
         function resizeComicImage() {
             const container = document.querySelector('.container');
             const rightPanel = document.querySelector('.right-panel');
+            const comic = document.getElementById('comic');
             
             const containerHeight = window.innerHeight;
             const containerWidth = window.innerWidth;
@@ -251,11 +281,28 @@
             const rightPanelHeight = containerHeight;
             rightPanel.style.height = `${rightPanelHeight}px`;
 
+            comic.style.width = `${rightPanel.clientWidth}px`;
+
             updateImageMap();
         }
 
+        function toggleMenu() {
+            const leftPanel = document.getElementById('left-panel');
+            leftPanel.classList.toggle('hidden');
+            setTimeout(resizeComicImage, 300); // Add delay to wait for the transition to complete
+        }
+
+        function initPage() {
+            // Retrieve lastUnit from local storage
+            const storedUnit = localStorage.getItem('lastUnit');
+            if (storedUnit) {
+                lastUnit = storedUnit;
+            }
+            requestComicImage();
+            resizeComicImage();
+        }
+
         window.addEventListener('resize', resizeComicImage);
-        window.addEventListener('load', resizeComicImage); // Call resizeComicImage onload
     </script>
 </body>
 </html>
