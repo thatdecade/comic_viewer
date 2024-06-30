@@ -11,24 +11,24 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden; /* Add overflow hidden to avoid scrollbars */
+            overflow: hidden;
         }
         .container {
             display: flex;
             width: 100%;
-            height: 100%; /* Adjust height to 100% */
+            height: 100%;
             border: 1px solid #ccc;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
-            position: relative; /* Position relative for containing the hamburger button */
+            box-sizing: border-box;
+            position: relative;
         }
         .left-panel {
             width: 0;
             padding: 0;
             border-right: none;
             height: 100%;
-            overflow-y: auto; /* Add scrolling for the left panel if content overflows */
-            transition: width 0.3s, padding 0.3s, border-right 0.3s; /* Smooth transition for width */
+            overflow-y: auto;
+            transition: width 0.3s, padding 0.3s, border-right 0.3s;
         }
         .left-panel.visible {
             width: 300px;
@@ -53,7 +53,7 @@
             color: white;
             border: none;
             cursor: pointer;
-            z-index: 1000; /* Ensure it stays on top */
+            z-index: 1000;
             font-size: 24px;
             line-height: 30px;
             text-align: center;
@@ -84,9 +84,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Center content vertically */
+            justify-content: center;
             height: 100%;
-            overflow: hidden; /* Add overflow hidden to avoid scrollbars */
+            overflow: hidden;
         }
         .comic {
             display: flex;
@@ -94,13 +94,13 @@
             align-items: center;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Ensure the image stays within the container */
-            position: relative; /* Position relative for image map */
+            overflow: hidden;
+            position: relative;
         }
         .comic img {
             max-width: 100%;
-            max-height: 100%; /* Ensure the image scales within the container */
-            object-fit: contain; /* Ensure the image scales proportionally and is fully visible */
+            max-height: 100%;
+            object-fit: contain;
         }
         .footer {
             margin-top: 20px;
@@ -125,14 +125,6 @@
             font-weight: bold;
         }
     </style>
-    <script type="module">
-        import { addDays, addWeeks, addMonths, formatISO, parseISO } from 'https://cdn.jsdelivr.net/npm/date-fns@2.29.2/esm/index.js';
-        window.addDays = addDays;
-        window.addWeeks = addWeeks;
-        window.addMonths = addMonths;
-        window.formatISO = formatISO;
-        window.parseISO = parseISO;
-    </script>
 </head>
 <body onload="initPage()">
     <div class="container">
@@ -184,6 +176,13 @@
     <script>
         let lastUnit = 'Day';
 
+        function formatISO(date) {
+            const year = date.getUTCFullYear();
+            const month = ('0' + (date.getUTCMonth() + 1)).slice(-2);
+            const day = ('0' + date.getUTCDate()).slice(-2);
+            return `${year}-${month}-${day}`;
+        }
+
         function saveSettings() {
             const comic = document.getElementById('comic').value;
             localStorage.setItem('selectedComic', comic);
@@ -192,26 +191,28 @@
             const date = document.getElementById('date').value;
             localStorage.setItem('selectedDate', date);
         }
-
+        
         function navigateDate(amount, unit) {
             lastUnit = unit;
             localStorage.setItem('lastUnit', lastUnit);
             updateIndicatorBarText();
 
             const dateInput = document.getElementById('date');
-            let date = window.parseISO(dateInput.value);
+            let date = new Date(dateInput.value); // Parse the date string to a Date object
 
+            // Adjust the date based on the unit using UTC methods
             if (unit.toLowerCase() === 'day') {
-                date = window.addDays(date, amount);
+                date.setUTCDate(date.getUTCDate() + amount);
             } else if (unit.toLowerCase() === 'week') {
-                date = window.addWeeks(date, amount);
+                date.setUTCDate(date.getUTCDate() + (amount * 7));
             } else if (unit.toLowerCase() === 'month') {
-                date = window.addMonths(date, amount);
+                date.setUTCMonth(date.getUTCMonth() + amount);
             }
 
-            dateInput.value = window.formatISO(date, { representation: 'date' });
+            // Format the adjusted date to ISO format (yyyy-MM-dd) and update the input field
+            dateInput.value = formatISO(date);
 
-            requestComicImage();
+            requestComicImage(); // Request the comic image for the new date
         }
 
         function navigateUsingLastUnit(amount) {
