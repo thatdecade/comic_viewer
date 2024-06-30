@@ -61,8 +61,11 @@ def save_image(response, file_path_jpg):
 
 def load_comic_image(selected_comic, selected_date, folder_path):
     global image_status
-    image_status["status"] = "downloading"
-    print(f"Loading comic image")
+    image_status["status"] = f"Loading comic image: {selected_comic} for {selected_date} from {folder_path}."
+    
+    if selected_comic != comic_manager.selected_comic['name']:
+        image_status["status"] = "Comic change in progress"
+        comic_manager.load_comic_details(selected_comic)
     
     date_str = datetime.strptime(selected_date, "%Y-%m-%d").strftime("%y%m%d")
     file_path_jpg = os.path.join(folder_path, f"{comic_manager.selected_comic['short_code']}{date_str}.jpg")
