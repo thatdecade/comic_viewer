@@ -125,6 +125,14 @@
             font-weight: bold;
         }
     </style>
+    <script type="module">
+        import { addDays, addWeeks, addMonths, formatISO, parseISO } from 'https://cdn.jsdelivr.net/npm/date-fns@2.29.2/esm/index.js';
+        window.addDays = addDays;
+        window.addWeeks = addWeeks;
+        window.addMonths = addMonths;
+        window.formatISO = formatISO;
+        window.parseISO = parseISO;
+    </script>
 </head>
 <body onload="initPage()">
     <div class="container">
@@ -191,15 +199,18 @@
             updateIndicatorBarText();
 
             const dateInput = document.getElementById('date');
-            let date = new Date(dateInput.value);
-            if (unit === 'Day') {
-                date.setDate( date.getDate()  + amount);
-            } else if (unit === 'Week') {
-                date.setDate( date.getDate()  + (amount * 7));
-            } else if (unit === 'Month') {
-                date.setMonth(date.getMonth() + amount);
+            let date = window.parseISO(dateInput.value);
+
+            if (unit.toLowerCase() === 'day') {
+                date = window.addDays(date, amount);
+            } else if (unit.toLowerCase() === 'week') {
+                date = window.addWeeks(date, amount);
+            } else if (unit.toLowerCase() === 'month') {
+                date = window.addMonths(date, amount);
             }
-            dateInput.value = date.toISOString().split('T')[0];
+
+            dateInput.value = window.formatISO(date, { representation: 'date' });
+
             requestComicImage();
         }
 
