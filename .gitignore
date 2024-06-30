@@ -163,4 +163,3 @@ cython_debug/
 
 settings.json
 image_url_parser.py
-docker-compose.yml

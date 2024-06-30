@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  comic_viewer:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - D:/comics:/mnt/comics
+      - D:/Cloud/Projects/ComicViewer/GIT/comic_viewer/instance:/mnt/db
+      - D:/Cloud/Projects/ComicViewer/GIT/comic_viewer:/mnt/settings
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: comic_web.py
+    command: flask run --host=0.0.0.0 --reload
