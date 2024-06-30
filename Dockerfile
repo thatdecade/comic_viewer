@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000
 
 # Define environment variables
-ENV SETTINGS_PATH=/app/settings.json
+ENV COMIC_SETTINGS_PATH=/mnt/settings/settings.json
 ENV COMIC_USERS_DB_PATH=/mnt/db
 ENV COMIC_VIEWER_PATH=/mnt/comics
 

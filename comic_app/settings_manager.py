@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 
-SETTINGS_FILE = "settings.json"
+SETTINGS_FILE = os.getenv('COMIC_SETTINGS_PATH', 'settings.json')
 DEFAULT_COMICS = [{
     "name": "Fox Trot",
     "url": "foxtrot",

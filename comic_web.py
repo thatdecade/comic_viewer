@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_file, redirect,
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect
 import os
 from datetime import datetime
 import threading
@@ -20,7 +21,8 @@ except ImportError:
 app = Flask(__name__)
 
 # Initialize settings manager and comic manager
-settings_manager = SettingsManager(SETTINGS_FILE)
+settings_file_path = os.getenv('COMIC_SETTINGS_PATH', SETTINGS_FILE)
+settings_manager = SettingsManager(settings_file_path)
 settings = settings_manager.settings
 comic_manager = ComicManager(settings["comics"], lambda: None)
 
@@ -34,7 +36,8 @@ else:
     settings["SECRET_KEY"] = app.config['SECRET_KEY']
     settings_manager.save_settings(settings)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+db_path = os.getenv('COMIC_USERS_DB_PATH', '/mnt/db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(db_path, "users.db")}'
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -48,9 +51,10 @@ class User(UserMixin, db.Model):
 
 # Initialize the database and create an admin user if necessary
 with app.app_context():
-    db.create_all()
-    admin_username = 'admin'
-    if not User.query.first():
+    inspector = inspect(db.engine)
+    if not inspector.has_table('user'):
+        db.create_all()
+        admin_username = 'admin'
         admin_password = secrets.token_urlsafe(16)
         hashed_password = bcrypt.generate_password_hash(admin_password).decode('utf-8')
         admin_user = User(username=admin_username, password=hashed_password)
