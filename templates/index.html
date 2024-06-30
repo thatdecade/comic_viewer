@@ -124,6 +124,19 @@
             color: white;
             font-weight: bold;
         }
+        .bottom-links {
+            bottom: 10px;
+            width: 100%;
+        }
+        .bottom-links a {
+            display: block;
+            margin: 5px 0;
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .bottom-links a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body onload="initPage()">
@@ -153,6 +166,10 @@
                 <button type="button" onclick="navigateDate(1, 'Week')">Next Week</button>
                 <button type="button" onclick="navigateDate(-1, 'Month')">Previous Month</button>
                 <button type="button" onclick="navigateDate(1, 'Month')">Next Month</button>
+            </div>
+            <div class="bottom-links">
+                <a href="{{ url_for('change_password') }}">Change Password</a>
+                <a href="{{ url_for('logout') }}">Sign Out</a>
             </div>
         </div>
         <div class="right-panel" id="right-panel">
