@@ -1,3 +1,4 @@
+
 # comic_viewer
 
 Comic Viewer is a local comic image viewer that allows you to browse through your favorite comics stored on your computer. It supports selecting comics by date and comic shortcodes for easy organization and access.
@@ -7,16 +8,18 @@ Comic Viewer is a local comic image viewer that allows you to browse through you
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
+- [WebUI Usage](#webui-usage)
 - [Adding and Editing Comics](#adding-and-editing-comics)
 - [File Naming Convention](#file-naming-convention)
 - [Known Issues](#known-issues)
 
 ## Features
 
-- Simple and intuitive interface for managing your comic collection.
+- Simple and intuitive GUI for managing your comic collection.
 - View locally stored comic images by selecting the date.
 - Supports multiple comics with unique shortcodes.
 - Add and edit comic details such as name, URL and shortcode.
+- WebUI for accessing comics from your browser.
 
 ## Installation
 
@@ -69,6 +72,28 @@ Comic Viewer expects the comic images to be named using a specific convention ba
     - `ft240625.bmp`
 
 Store these images in the folder specified in the application settings or the default folder (`~/comics` or `~/Pictures/comics` on Windows).
+
+## WebUI Usage
+
+1. **Run the web application**
+
+     ```bash
+     python comic_web.py
+     ```
+
+   - Open your web browser and navigate to `http://127.0.0.1:5000`.
+   - Log in using the admin credentials displayed in the command line.
+
+2. **Passwords:**
+
+   - On the first run, an admin user will be created with a randomly generated password. The username and password will be displayed in the command line. Make sure to save this password for future logins.
+
+     Example output:
+     ```
+     Username: admin, Password: generated_password
+     ```
+
+   - Click on "Change Password" at the bottom of the left panel to change the admin password.
 
 ## Known Issues
 
