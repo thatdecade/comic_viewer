@@ -239,6 +239,8 @@
         function requestComicImage() {
             const comic = document.getElementById('comic').value;
             const date  = document.getElementById('date').value;
+                    
+            console.log(`Requesting comic image for comic: ${comic} on date: ${date}`);
             
             fetch('/request_image', {
                 method: 'POST',
@@ -248,12 +250,14 @@
                 body: JSON.stringify({ comic: comic, date: date }),
             })
             .then(response => {
+                console.log('Response status:', response.status);
                 if (response.status === 202) {
                     checkStatus();
                 }
-            });
+            })
+            .catch(error => console.error('Error requesting comic image:', error));
         }
-
+        
         function checkStatus() {
             fetch('/status')
             .then(response => response.json())
@@ -261,6 +265,7 @@
                 const statusBar = document.getElementById('status-bar');
                 if (data.status === 'success') {
                     const comicImage = document.getElementById('comic-image');
+                    console.log('Status is success for', data.file_path);
                     comicImage.src = data.file_path;
                     comicImage.onload = () => {
                         updateImageMap();
@@ -268,12 +273,15 @@
                     };
                     statusBar.textContent = 'Comic loaded successfully.';
                 } else if (data.status === 'failure') {
+                    console.log('Status check failure');
                     statusBar.textContent = 'Failed to load comic.';
                 } else {
+                    console.log('Status:', data.status);
                     statusBar.textContent = data.status;
                     setTimeout(checkStatus, 500);
                 }
-            });
+            })
+            .catch(error => console.error('Error checking status:', error));
         }
 
         function updateImageMap() {

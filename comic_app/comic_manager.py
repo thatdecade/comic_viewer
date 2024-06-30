@@ -1,7 +1,7 @@
 class ComicManager:
     def __init__(self, comics, callback):
         self.comics = comics
-        self.selected_comic = comics[0]
+        self.selected_comic = comics[0] if comics else None
         self.callback = callback
 
     def add_comic(self, comic_details):

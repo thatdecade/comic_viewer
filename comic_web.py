@@ -1,13 +1,14 @@
+import os
+import logging
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
-import os
-from datetime import datetime
+import secrets
 import threading
 import requests
-import secrets
+from datetime import datetime
 
 from comic_app.settings_manager import SettingsManager, SETTINGS_FILE
 from comic_app.comic_manager import ComicManager
@@ -21,10 +22,21 @@ except ImportError:
 app = Flask(__name__)
 
 # Initialize settings manager and comic manager
-settings_file_path = os.getenv('COMIC_SETTINGS_PATH', SETTINGS_FILE)
+settings_dir = os.getenv('COMIC_SETTINGS_PATH', '/mnt/settings')
+settings_file_path = os.path.join(settings_dir, SETTINGS_FILE)
+
+# Setup logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s',
+                    handlers=[
+                        logging.StreamHandler()
+                    ])
+logger = logging.getLogger(__name__)
+
+logger.debug(f"Settings file path: {settings_file_path}")
 settings_manager = SettingsManager(settings_file_path)
 settings = settings_manager.settings
-comic_manager = ComicManager(settings["comics"], lambda: None)
+comic_manager = ComicManager(settings.get("comics", []), lambda: None)
 
 # Global variable to hold image loading status
 image_status = {"status": "waiting", "file_path": ""}
@@ -62,6 +74,7 @@ with app.app_context():
         db.session.commit()
         settings["admin_password"] = admin_password
         settings_manager.save_settings(settings)
+        logger.info(f'Admin user created with password: {admin_password}')
     else:
         admin_user = User.query.first()
         if "admin_password" not in settings:
@@ -71,18 +84,19 @@ with app.app_context():
             db.session.commit()
             settings["admin_password"] = admin_password
             settings_manager.save_settings(settings)
+            logger.info(f'Admin user password reset to: {admin_password}')
         else:
             admin_password = settings["admin_password"]
         
         # Check if the hash of the stored password matches the hash in the database
         if bcrypt.check_password_hash(admin_user.password, admin_password):
-            print(f'Username: {admin_username}, Password: {admin_password}')
-            print(f'Please change the default password!')
+            logger.info(f'Username: {admin_user.username}, Password: {admin_password}')
+            logger.info(f'Please change the default password!')
 
 def download_and_save_comic_image(date_str, folder_path, file_path_jpg):
     global image_status
     if parser_available:
-        #print("Downloading comic image...")
+        logger.debug("Downloading comic image...")
         image_status["status"] = "Downloading comic image..."
         comic_name = comic_manager.selected_comic["url"]
         parser = Image_URL_Parser(comic_name)
@@ -92,7 +106,7 @@ def download_and_save_comic_image(date_str, folder_path, file_path_jpg):
             date_str[4:]              # day
         )
         if image_url:
-            #print("Parse success, fetch image to save.")
+            logger.debug("Parse success, fetch image to save.")
             fetch_image(image_url, file_path_jpg)
             return
     image_status["status"] = "failure"
@@ -104,6 +118,7 @@ def fetch_image(image_url, file_path_jpg):
         response.raise_for_status()
         save_image(response, file_path_jpg)
     except requests.RequestException as e:
+        logger.error(f"Failed to fetch image: {e}")
         image_status["status"] = "failure"
 
 def save_image(response, file_path_jpg):
@@ -112,7 +127,8 @@ def save_image(response, file_path_jpg):
         for chunk in response.iter_content(chunk_size=8192):
             file.write(chunk)
         image_status["file_path"] = file_path_jpg
-        image_status["status"] = "success"  # "Downloaded and saved comic to {file_path_jpg}"
+        image_status["status"] = "success"
+        logger.debug(f"Downloaded and saved comic to {file_path_jpg}")
 
 def load_comic_image(selected_comic, selected_date, folder_path):
     global image_status
@@ -127,15 +143,15 @@ def load_comic_image(selected_comic, selected_date, folder_path):
     file_path_bmp = os.path.join(folder_path, f"{comic_manager.selected_comic['short_code']}{date_str}.bmp")
 
     if os.path.exists(file_path_jpg):
-        #print(f"Path exists: {file_path_jpg}")
+        logger.debug(f"Path exists: {file_path_jpg}")
         image_status["file_path"] = file_path_jpg
-        image_status["status"] = "success"  # f"Loaded comic from {file_path_jpg}"
+        image_status["status"] = "success"
     elif os.path.exists(file_path_bmp):
-        #print(f"Path exists: {file_path_bmp}")
+        logger.debug(f"Path exists: {file_path_bmp}")
         image_status["file_path"] = file_path_bmp
-        image_status["status"] = "success"  # f"Loaded comic from {file_path_bmp}"
+        image_status["status"] = "success"
     else:
-        #print(f"No image found, attempt to download")
+        logger.debug("No image found, attempt to download")
         download_and_save_comic_image(date_str, folder_path, file_path_jpg)
 
 @login_manager.user_loader
@@ -206,7 +222,6 @@ def request_image():
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     
-    # Start a new thread to load the comic image
     threading.Thread(target=load_comic_image, args=(selected_comic, selected_date, folder_path)).start()
     
     return jsonify({"status": "loading"}), 202
@@ -223,7 +238,7 @@ def status():
 @login_required
 def serve_image(filename):
     folder_path = settings.get("folder_path", os.path.join(os.path.expanduser("~"), "Pictures", "comics"))
-    #print(f"Sending {os.path.join(folder_path, filename)}")
+    logger.debug(f"Sending {os.path.join(folder_path, filename)}")
     return send_file(os.path.join(folder_path, filename))
 
 if __name__ == '__main__':

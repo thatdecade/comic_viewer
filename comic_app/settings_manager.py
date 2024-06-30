@@ -1,8 +1,6 @@
-import os
 import json
-from datetime import datetime
+import os
 
-SETTINGS_FILE = os.getenv('COMIC_SETTINGS_PATH', 'settings.json')
 DEFAULT_COMICS = [{
     "name": "Fox Trot",
     "url": "foxtrot",
@@ -11,37 +9,41 @@ DEFAULT_COMICS = [{
     "header_fg": "#ffffff"
 }]
 
+DEFAULT_SETTINGS = {
+    "comics": DEFAULT_COMICS,
+    "SECRET_KEY": "default_secret_key",
+    "folder_path": os.getenv('COMIC_VIEWER_PATH', os.path.join(os.path.expanduser("~"), "Pictures", "comics"))
+}
+
+SETTINGS_FILE = 'settings.json'
+
 class SettingsManager:
-    def __init__(self, settings_file):
-        self.settings_file = settings_file
+    def __init__(self, settings_file_path):
+        self.settings_file = settings_file_path
         self.settings = self.load_settings()
 
     def load_settings(self):
-        if os.path.exists(self.settings_file):
-            with open(self.settings_file, "r") as f:
-                try:
-                    settings = json.load(f)
-                    env_folder_path = os.getenv('COMIC_VIEWER_PATH')
-                    if env_folder_path:
-                        settings['folder_path'] = env_folder_path
-                    return settings
-                except (json.JSONDecodeError, KeyError, TypeError) as e:
-                    print(f"Error loading settings: {e}. Resetting to default settings.")
-                    return self.reset_settings()
+        if not os.path.exists(self.settings_file):
+            settings_dir = os.path.dirname(self.settings_file)
+            os.makedirs(settings_dir, exist_ok=True)
+            settings = DEFAULT_SETTINGS
         else:
-            return self.reset_settings()
+            with open(self.settings_file, 'r') as f:
+                settings = json.load(f)
+
+        # Ensure all default settings are present
+        for key, value in DEFAULT_SETTINGS.items():
+            if key not in settings:
+                settings[key] = value
+
+        return settings
 
     def save_settings(self, settings):
-        with open(self.settings_file, "w") as f:
-            json.dump(settings, f)
-
-    def reset_settings(self):
-        env_folder_path = os.getenv('COMIC_VIEWER_PATH', "")
-        return {
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "folder_path": env_folder_path,
-            "comics": DEFAULT_COMICS,
-            "selected_comic": DEFAULT_COMICS[0]['name'],
-            "window_size": "800x600",
-            "window_position": '100+100'
-        }
+        settings_dir = os.path.dirname(self.settings_file)
+        os.makedirs(settings_dir, exist_ok=True)
+        try:
+            with open(self.settings_file, 'w') as f:
+                json.dump(settings, f, indent=4)
+            print(f"Settings saved to {self.settings_file}")
+        except Exception as e:
+            print(f"Error saving settings: {e}")
