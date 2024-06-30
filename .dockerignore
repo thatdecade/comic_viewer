@@ -1,0 +1,10 @@
+# Ignore the users.db file
+instance/users.db
+
+# Ignore Python bytecode files
+*.pyc
+__pycache__/
+
+# Ignore virtual environments
+venv/
+.env/
