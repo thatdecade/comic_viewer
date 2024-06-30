@@ -20,7 +20,11 @@ class SettingsManager:
         if os.path.exists(self.settings_file):
             with open(self.settings_file, "r") as f:
                 try:
-                    return json.load(f)
+                    settings = json.load(f)
+                    env_folder_path = os.getenv('COMIC_VIEWER_PATH')
+                    if env_folder_path:
+                        settings['folder_path'] = env_folder_path
+                    return settings
                 except (json.JSONDecodeError, KeyError, TypeError) as e:
                     print(f"Error loading settings: {e}. Resetting to default settings.")
                     return self.reset_settings()
@@ -32,9 +36,10 @@ class SettingsManager:
             json.dump(settings, f)
 
     def reset_settings(self):
+        env_folder_path = os.getenv('COMIC_VIEWER_PATH', "")
         return {
             "date": datetime.now().strftime("%Y-%m-%d"),
-            "folder_path": "",
+            "folder_path": env_folder_path,
             "comics": DEFAULT_COMICS,
             "selected_comic": DEFAULT_COMICS[0]['name'],
             "window_size": "800x600",
