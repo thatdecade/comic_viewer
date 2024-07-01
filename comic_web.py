@@ -22,7 +22,7 @@ except ImportError:
 app = Flask(__name__)
 
 # Initialize settings manager and comic manager
-settings_dir = os.getenv('COMIC_SETTINGS_PATH', '/mnt/settings')
+settings_dir = os.getenv('COMIC_SETTINGS_PATH', '')
 settings_file_path = os.path.join(settings_dir, SETTINGS_FILE)
 
 # Setup logging
@@ -41,14 +41,14 @@ comic_manager = ComicManager(settings.get("comics", []), lambda: None)
 # Global variable to hold image loading status
 image_status = {"status": "waiting", "file_path": ""}
 
-if "SECRET_KEY" in settings:
+if settings.get("SECRET_KEY", None):
     app.config['SECRET_KEY'] = settings["SECRET_KEY"]
 else:
     app.config['SECRET_KEY'] = secrets.token_hex(16)
     settings["SECRET_KEY"] = app.config['SECRET_KEY']
     settings_manager.save_settings(settings)
 
-db_path = os.getenv('COMIC_USERS_DB_PATH', '/mnt/db')
+db_path = os.getenv('COMIC_USERS_DB_PATH', '')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(db_path, "users.db")}'
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -77,7 +77,9 @@ with app.app_context():
         logger.info(f'Admin user created with password: {admin_password}')
     else:
         admin_user = User.query.first()
-        if "admin_password" not in settings:
+        if settings.get("admin_password", None):
+            admin_password = settings["admin_password"]
+        else:
             admin_password = secrets.token_urlsafe(16)
             hashed_password = bcrypt.generate_password_hash(admin_password).decode('utf-8')
             admin_user.password = hashed_password
@@ -85,10 +87,8 @@ with app.app_context():
             settings["admin_password"] = admin_password
             settings_manager.save_settings(settings)
             logger.info(f'Admin user password reset to: {admin_password}')
-        else:
-            admin_password = settings["admin_password"]
         
-        # Check if the hash of the stored password matches the hash in the database
+        # Check if the hash of the plaintext stored password matches the hash in the database
         if bcrypt.check_password_hash(admin_user.password, admin_password):
             logger.info(f'Username: {admin_user.username}, Password: {admin_password}')
             logger.info(f'Please change the default password!')
@@ -207,6 +207,7 @@ def comic_viewer():
         settings_manager.save_settings(settings)
         return redirect(url_for('comic_viewer'))
 
+    logger.debug(f"Comics list to html: {comic_manager.comics}")
     return render_template('index.html', comics=comic_manager.comics)
 
 @app.route('/request_image', methods=['POST'])
