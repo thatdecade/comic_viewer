@@ -45,6 +45,8 @@ class ComicViewer(tk.Tk):
         file_menu.add_separator()
         file_menu.add_command(label="Add Comic", command=self.add_comic)
         file_menu.add_command(label="Edit Comic", command=self.edit_comic)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.on_close)  # Added Exit option
         menubar.add_cascade(label="File", menu=file_menu)
         self.config(menu=menubar)
 
